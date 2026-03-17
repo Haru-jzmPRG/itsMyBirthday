@@ -6,7 +6,7 @@
 // Spotify
 export const SPOTIFY_CLIENT_ID = 'a931290fc26a4b0582d76706e6127d11';
 export const REDIRECT_URI = 'https://haru-jzmprg.github.io/itsMyBirthday/music/host.html';
-export const PLAYLIST_ID       = '1hq9jCstOHeXNxppd5SYyp';
+export const PLAYLIST_ID       = '37i9dQZEVXbMDoHDwVN2tF';
 export const SPOTIFY_SCOPES    = 'playlist-read-private playlist-read-collaborative';
 
 // Firebase

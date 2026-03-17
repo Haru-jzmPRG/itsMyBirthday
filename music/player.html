@@ -1,144 +1,70 @@
-<!-- music/player.html -->
-<!DOCTYPE html>
-<html lang="es">
+<script type="module">
+    import { watchGameState } from "./music.js";
+    import { joinGame, watchScoreboard } from "../js/scores.js";
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎵 Jugador — itsMyBirthday</title>
-    <link rel="stylesheet" href="../css/main.css" />
-    <link rel="stylesheet" href="../css/music.css" />
-</head>
+    const GAME_ID = "music";
+    let playerName = null;
 
-<body>
+    function showScreen(id) {
+        document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+    }
 
-    <!-- ── REGISTRO ──────────────────────────────────────── -->
-    <div id="screen-register" class="screen active">
-        <div class="center-card">
-            <h1>🎂 itsMyBirthday</h1>
-            <h2>Juego de Música</h2>
-            <p>¿Cómo te llamás?</p>
-            <input id="input-name" type="text" placeholder="Tu nombre" maxlength="20" autocomplete="off" />
-            <button id="btn-join" class="btn-primary">Unirse al juego</button>
-            <p id="join-error" class="error-msg hidden">Ese nombre ya está en uso, elegí otro.</p>
-        </div>
-    </div>
+    function show(id) { document.getElementById(id).classList.remove("hidden"); }
+    function hide(id) { document.getElementById(id).classList.add("hidden"); }
 
-    <!-- ── ESPERANDO ─────────────────────────────────────── -->
-    <div id="screen-waiting" class="screen">
-        <div class="center-card">
-            <div class="pulse-emoji">🎵</div>
-            <h2>Esperando la próxima canción...</h2>
-            <p id="waiting-name" class="subtitle"></p>
-            <div class="scoreboard-wrapper">
-                <h3>Puntajes</h3>
-                <div id="scoreboard-waiting"></div>
-            </div>
-        </div>
-    </div>
+    // ── Si ya tiene nombre guardado, entrar directo ─────────
+    const savedName = localStorage.getItem("playerName");
+    if (savedName) {
+        enterGame(savedName);
+    }
 
-    <!-- ── ESCUCHANDO ─────────────────────────────────────── -->
-    <div id="screen-playing" class="screen">
-        <div class="center-card">
-            <div class="pulse-emoji playing">🎧</div>
-            <h2>¡Escuchá!</h2>
-            <p>¿De qué canción se trata?</p>
-            <div class="scoreboard-wrapper">
-                <h3>Puntajes</h3>
-                <div id="scoreboard-playing"></div>
-            </div>
-        </div>
-    </div>
+    async function enterGame(name) {
+        playerName = name;
+        await joinGame(GAME_ID, name);
 
-    <!-- ── REVELACIÓN ─────────────────────────────────────── -->
-    <div id="screen-revealed" class="screen">
-        <div class="center-card">
-            <img id="reveal-cover" src="" alt="portada" class="reveal-cover" />
-            <div class="reveal-info">
-                <h2 id="reveal-name">—</h2>
-                <p id="reveal-artist">—</p>
-            </div>
-            <div class="scoreboard-wrapper">
-                <h3>Puntajes</h3>
-                <div id="scoreboard-revealed"></div>
-            </div>
-        </div>
-    </div>
+        watchScoreboard(GAME_ID, "scoreboard-waiting");
+        watchScoreboard(GAME_ID, "scoreboard-playing");
+        watchScoreboard(GAME_ID, "scoreboard-revealed");
+        watchGameState(handleGameState);
 
-    <script type="module">
-        import { watchGameState } from "./music.js";
-        import { joinGame, watchScoreboard } from "../js/scores.js";
+        document.getElementById("waiting-name").textContent = `Jugando como ${playerName}`;
+        showScreen("screen-waiting");
+    }
 
-        const GAME_ID = "music";
-        let playerName = null;
+    // ── Registro manual si no hay nombre guardado ──────────
+    document.getElementById("btn-join").addEventListener("click", async () => {
+        const input = document.getElementById("input-name");
+        const name = input.value.trim();
+        if (!name) return;
 
-        // ── Helpers ────────────────────────────────────────────
-        function showScreen(id) {
-            document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-            document.getElementById(id).classList.add("active");
+        const joined = await joinGame(GAME_ID, name);
+        if (!joined) {
+            show("join-error");
+            return;
         }
 
-        function show(id) { document.getElementById(id).classList.remove("hidden"); }
-        function hide(id) { document.getElementById(id).classList.add("hidden"); }
+        localStorage.setItem("playerName", name);
+        hide("join-error");
+        await enterGame(name);
+    });
 
-        // ── Registro ───────────────────────────────────────────
-        document.getElementById("btn-join").addEventListener("click", async () => {
-            const input = document.getElementById("input-name");
-            const name = input.value.trim();
+    document.getElementById("input-name").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("btn-join").click();
+    });
 
-            if (!name) return;
-
-            const joined = await joinGame(GAME_ID, name);
-
-            if (!joined) {
-                show("join-error");
-                return;
-            }
-
-            playerName = name;
-            hide("join-error");
-
-            // Activar scoreboards en tiempo real
-            watchScoreboard(GAME_ID, "scoreboard-waiting");
-            watchScoreboard(GAME_ID, "scoreboard-playing");
-            watchScoreboard(GAME_ID, "scoreboard-revealed");
-
-            // Escuchar estado del juego
-            watchGameState(handleGameState);
-
-            document.getElementById("waiting-name").textContent = `Jugando como ${playerName}`;
-            showScreen("screen-waiting");
-        });
-
-        // Permitir Enter en el input
-        document.getElementById("input-name").addEventListener("keydown", (e) => {
-            if (e.key === "Enter") document.getElementById("btn-join").click();
-        });
-
-        // ── Manejar estados del juego ──────────────────────────
-        function handleGameState(state) {
-            if (!state) return;
-
-            switch (state.status) {
-
-                case "waiting":
-                    showScreen("screen-waiting");
-                    break;
-
-                case "playing":
-                    showScreen("screen-playing");
-                    break;
-
-                case "revealed":
-                    document.getElementById("reveal-cover").src = state.cover || "";
-                    document.getElementById("reveal-name").textContent = state.trackName || "—";
-                    document.getElementById("reveal-artist").textContent = state.artist || "—";
-                    showScreen("screen-revealed");
-                    break;
-            }
+    // ── Manejar estados ────────────────────────────────────
+    function handleGameState(state) {
+        if (!state) return;
+        switch (state.status) {
+            case "waiting": showScreen("screen-waiting"); break;
+            case "playing": showScreen("screen-playing"); break;
+            case "revealed":
+                document.getElementById("reveal-cover").src = state.cover || "";
+                document.getElementById("reveal-name").textContent = state.trackName || "—";
+                document.getElementById("reveal-artist").textContent = state.artist || "—";
+                showScreen("screen-revealed");
+                break;
         }
-    </script>
-
-</body>
-
-</html>
+    }
+</script>
