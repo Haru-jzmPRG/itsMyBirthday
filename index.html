@@ -11,46 +11,117 @@
 
 <body>
 
-    <div class="home-wrapper">por ahroa son polo un juego de mesa como ejemplo y cuando sepa los juegos yo los añado
-
-        <header class="home-header">
-            <h1>🎂 itsMyBirthday</h1>
-            <p class="home-subtitle">Elegí un juego para empezar</p>
-        </header>
-
-        <main class="home-grid">
-
-            <!-- Juego de música -->
-            <a href="music/player.html" class="module-card music">
-                <span class="module-icon">🎵</span>
-                <span class="module-title">Adivina la canción</span>
-                <span class="module-desc">Escuchá el preview y adiviná</span>
-            </a>
-
-            <!-- Galería de fotos -->
-            <a href="photos/index.html" class="module-card photos">
-                <span class="module-icon">📸</span>
-                <span class="module-title">Galería</span>
-                <span class="module-desc">Sacá fotos y compartilas</span>
-            </a>
-
-            <!-- Juegos de mesa -->
-            <a href="boardgames/index.html" class="module-card boardgames">
-                <span class="module-icon">🎲</span>
-                <span class="module-title">Juegos de mesa</span>
-                <span class="module-desc">Marcá los puntajes</span>
-            </a>
-
-            <!-- Acceso host (discreto) -->
-            <a href="music/host.html" class="module-card host">
-                <span class="module-icon">🎛️</span>
-                <span class="module-title">Panel del host</span>
-                <span class="module-desc">Solo para el cumpleañero</span>
-            </a>
-
-        </main>
-
+    <!-- ── REGISTRO ──────────────────────────────────────── -->
+    <div id="screen-register" class="screen active">
+        <div class="home-wrapper">
+            <header class="home-header">
+                <h1>🎂 itsMyBirthday</h1>
+                <p class="home-subtitle">¿Cómo te llamás?</p>
+            </header>
+            <div class="register-card">
+                <input id="input-name" type="text" placeholder="Tu nombre" maxlength="20" autocomplete="off" />
+                <button id="btn-join" class="btn-primary">Unirse a la fiesta 🎉</button>
+                <p id="join-error" class="error-msg hidden">Ese nombre ya está en uso, elegí otro.</p>
+            </div>
+        </div>
     </div>
+
+    <!-- ── MENÚ PRINCIPAL ─────────────────────────────────── -->
+    <div id="screen-menu" class="screen">
+        <div class="home-wrapper">
+
+            <header class="home-header">
+                <h1>🎂 itsMyBirthday</h1>
+                <p id="welcome-msg" class="home-subtitle"></p>
+            </header>
+
+            <main class="home-grid">
+
+                <!-- Juego de música -->
+                <a href="music/player.html" class="module-card music">
+                    <span class="module-icon">🎵</span>
+                    <span class="module-title">Adivina la canción</span>
+                    <span class="module-desc">Escuchá el preview y adiviná</span>
+                </a>
+
+                <!-- Galería de fotos -->
+                <a href="photos/index.html" class="module-card photos">
+                    <span class="module-icon">📸</span>
+                    <span class="module-title">Galería</span>
+                    <span class="module-desc">Sacá fotos y compartilas</span>
+                </a>
+
+                <!-- 
+          JUEGOS DE MESA — duplicá este bloque por cada juego nuevo
+          Cambiá: href, module-icon, module-title, module-desc
+          Colores disponibles: boardgame-1 / boardgame-2 / boardgame-3 / boardgame-4
+        -->
+                <a href="boardgames/ejemplo/index.html" class="module-card boardgame-1">
+                    <span class="module-icon">🎲</span>
+                    <span class="module-title">Ejemplo de juego</span>
+                    <span class="module-desc">Marcá los puntajes</span>
+                </a>
+
+                <!-- Panel del host (discreto) -->
+                <a href="music/host.html" class="module-card host">
+                    <span class="module-icon">🎛️</span>
+                    <span class="module-title">Panel del host</span>
+                    <span class="module-desc">Solo para el cumpleañero</span>
+                </a>
+
+            </main>
+        </div>
+    </div>
+
+    <script type="module">
+        import { joinGame } from "./js/scores.js";
+
+        const GAME_ID = "lobby";
+
+        // ── Helpers ────────────────────────────────────────────
+        function showScreen(id) {
+            document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+
+        function show(id) { document.getElementById(id).classList.remove("hidden"); }
+        function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+        // ── Si ya se registró antes, saltar directo al menú ────
+        const savedName = localStorage.getItem("playerName");
+        if (savedName) {
+            document.getElementById("welcome-msg").textContent = `¡Hola, ${savedName}! 👋`;
+            showScreen("screen-menu");
+        }
+
+        // ── Registro ───────────────────────────────────────────
+        document.getElementById("btn-join").addEventListener("click", async () => {
+            const input = document.getElementById("input-name");
+            const name = input.value.trim();
+            if (!name) return;
+
+            document.getElementById("btn-join").textContent = "Entrando...";
+            document.getElementById("btn-join").disabled = true;
+
+            const joined = await joinGame(GAME_ID, name);
+
+            if (!joined) {
+                show("join-error");
+                document.getElementById("btn-join").textContent = "Unirse a la fiesta 🎉";
+                document.getElementById("btn-join").disabled = false;
+                return;
+            }
+
+            localStorage.setItem("playerName", name);
+            document.getElementById("welcome-msg").textContent = `¡Hola, ${name}! 👋`;
+            showScreen("screen-menu");
+        });
+
+        // Enter en el input
+        document.getElementById("input-name").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") document.getElementById("btn-join").click();
+        });
+    </script>
 
 </body>
 
