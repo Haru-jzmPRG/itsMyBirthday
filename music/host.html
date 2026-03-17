@@ -1,0 +1,244 @@
+<!-- music/host.html -->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🎵 Host — itsMyBirthday</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/music.css" />
+</head>
+
+<body>
+
+    <!-- ── LOGIN ─────────────────────────────────────────── -->
+    <div id="screen-login" class="screen active">
+        <div class="center-card">
+            <h1>🎂 itsMyBirthday</h1>
+            <h2>Panel del Host</h2>
+            <p>Iniciá sesión con Spotify para cargar la playlist</p>
+            <button id="btn-login" class="btn-primary">Conectar con Spotify</button>
+        </div>
+    </div>
+
+    <!-- ── CARGANDO ───────────────────────────────────────── -->
+    <div id="screen-loading" class="screen">
+        <div class="center-card">
+            <div class="spinner"></div>
+            <p>Cargando playlist...</p>
+        </div>
+    </div>
+
+    <!-- ── JUEGO ──────────────────────────────────────────── -->
+    <div id="screen-game" class="screen">
+
+        <!-- Canción actual -->
+        <div id="track-card" class="track-card hidden">
+            <img id="track-cover" src="" alt="portada" />
+            <div class="track-info">
+                <span id="track-name">—</span>
+                <span id="track-artist">—</span>
+            </div>
+        </div>
+
+        <!-- Controles principales -->
+        <div class="host-controls">
+
+            <button id="btn-play" class="btn-primary btn-big">
+                ▶ Sonar 1 segundo
+            </button>
+
+            <div id="extend-panel" class="extend-panel hidden">
+                <p>¿Cuánto más la dejás sonar?</p>
+                <div class="extend-buttons">
+                    <button class="btn-extend" data-seconds="2">+2s</button>
+                    <button class="btn-extend" data-seconds="5">+5s</button>
+                    <button class="btn-extend" data-seconds="10">+10s</button>
+                    <button class="btn-extend" data-seconds="30">+30s</button>
+                </div>
+            </div>
+
+            <button id="btn-reveal" class="btn-secondary hidden">
+                👁 Revelar canción
+            </button>
+
+            <button id="btn-next" class="btn-secondary hidden">
+                ⏭ Siguiente canción
+            </button>
+
+        </div>
+
+        <!-- Panel de jugadores -->
+        <div class="players-section">
+            <div class="section-header">
+                <h3>Jugadores</h3>
+                <button id="btn-reset" class="btn-danger-small">Reset puntos</button>
+            </div>
+            <div id="player-list">
+                <p class="empty-msg">Esperando jugadores...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import {
+            loginWithSpotify,
+            handleCallback,
+            getToken,
+            loadPlaylist,
+            getRandomTrack,
+            playPreview,
+            extendPlayback,
+            stopPreview,
+            broadcastTrack,
+            revealTrack,
+            setWaiting,
+            initHostPanel,
+            resetRound,
+        } from "./music.js";
+
+        // ── Estado local ───────────────────────────────────────
+        let tracks = [];
+        let playedIds = [];
+        let currentTrack = null;
+        let hasPlayed = false;
+
+        // ── Helpers de pantalla ────────────────────────────────
+        function showScreen(id) {
+            document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+            document.getElementById(id).classList.add("active");
+        }
+
+        function show(id) { document.getElementById(id).classList.remove("hidden"); }
+        function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+        // ── Init ───────────────────────────────────────────────
+        async function init() {
+            // Si volvió del callback de Spotify
+            if (window.location.search.includes("code=")) {
+                showScreen("screen-loading");
+                const token = await handleCallback();
+                if (token) await startGame(token);
+                else showScreen("screen-login");
+                return;
+            }
+
+            const token = getToken();
+            if (token) {
+                showScreen("screen-loading");
+                await startGame(token);
+            } else {
+                showScreen("screen-login");
+            }
+        }
+
+        async function startGame(token) {
+            tracks = await loadPlaylist(token);
+
+            if (tracks.length === 0) {
+                alert("No se encontraron canciones con preview en la playlist. Probá con otra playlist.");
+                showScreen("screen-login");
+                return;
+            }
+
+            initHostPanel("player-list");
+            await setWaiting();
+            loadNextTrack();
+            showScreen("screen-game");
+        }
+
+        // ── Cargar siguiente canción ───────────────────────────
+        function loadNextTrack() {
+            currentTrack = getRandomTrack(tracks, playedIds);
+
+            if (!currentTrack) {
+                alert("¡Se acabaron las canciones! Reseteando...");
+                playedIds = [];
+                currentTrack = getRandomTrack(tracks, []);
+            }
+
+            playedIds.push(currentTrack.id);
+            hasPlayed = false;
+
+            // Actualizar card (oculta hasta revelar)
+            document.getElementById("track-cover").src = currentTrack.cover || "";
+            document.getElementById("track-name").textContent = currentTrack.name;
+            document.getElementById("track-artist").textContent = currentTrack.artist;
+
+            // Resetear UI
+            hide("track-card");
+            hide("extend-panel");
+            hide("btn-reveal");
+            hide("btn-next");
+            show("btn-play");
+
+            document.getElementById("btn-play").textContent = "▶ Sonar 1 segundo";
+            document.getElementById("btn-play").disabled = false;
+        }
+
+        // ── Botón: sonar 1 segundo ─────────────────────────────
+        document.getElementById("btn-play").addEventListener("click", async () => {
+            if (!currentTrack) return;
+
+            await broadcastTrack(currentTrack);
+
+            playPreview(currentTrack.preview, 1, () => {
+                // Cuando termina el 1 segundo
+                show("extend-panel");
+                show("btn-reveal");
+            });
+
+            document.getElementById("btn-play").textContent = "🎵 Sonando...";
+            document.getElementById("btn-play").disabled = true;
+            hasPlayed = true;
+        });
+
+        // ── Botones: extender tiempo ───────────────────────────
+        document.querySelectorAll(".btn-extend").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const seconds = parseInt(btn.dataset.seconds);
+                extendPlayback(seconds, () => {
+                    // No hace nada al terminar, el host decide cuándo revelar
+                });
+                // Feedback visual
+                btn.textContent = `✓ +${seconds}s`;
+                setTimeout(() => { btn.textContent = `+${seconds}s`; }, 1500);
+            });
+        });
+
+        // ── Botón: revelar canción ─────────────────────────────
+        document.getElementById("btn-reveal").addEventListener("click", async () => {
+            stopPreview();
+            await revealTrack(currentTrack);
+            show("track-card");
+            show("btn-next");
+            hide("extend-panel");
+            hide("btn-reveal");
+            hide("btn-play");
+        });
+
+        // ── Botón: siguiente canción ───────────────────────────
+        document.getElementById("btn-next").addEventListener("click", async () => {
+            await setWaiting();
+            loadNextTrack();
+        });
+
+        // ── Botón: reset puntos ────────────────────────────────
+        document.getElementById("btn-reset").addEventListener("click", async () => {
+            if (confirm("¿Resetear todos los puntos a 0?")) {
+                await resetRound();
+            }
+        });
+
+        // ── Login ──────────────────────────────────────────────
+        document.getElementById("btn-login").addEventListener("click", loginWithSpotify);
+
+        // ── Arrancar ───────────────────────────────────────────
+        init();
+    </script>
+
+</body>
+
+</html>
