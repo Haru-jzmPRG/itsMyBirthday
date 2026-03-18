@@ -1,0 +1,259 @@
+/* css/boardgames.css */
+
+/* ── Topbar ───────────────────────────────────────────── */
+.bg-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.bg-topbar h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+/* ── Selector de juego ────────────────────────────────── */
+.game-selector {
+    padding: 12px 16px 0;
+}
+
+.selector-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.game-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 12px;
+}
+
+.game-tab {
+    padding: 8px 16px;
+    background: var(--surface2);
+    border: 2px solid transparent;
+    border-radius: 99px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.game-tab.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--surface);
+}
+
+/* ── Lista de jugadores (host) ────────────────────────── */
+.bg-players {
+    padding: 8px 16px;
+}
+
+.bg-player-row {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bg-player-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bg-player-name {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.bg-player-scores {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
+.score-game {
+    font-size: 0.75rem;
+    color: var(--accent2);
+}
+
+.score-total {
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.bg-point-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-pts {
+    flex: 1;
+    padding: 10px 4px;
+    background: var(--surface2);
+    border: 1px solid var(--surface2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 0.15s;
+}
+
+.btn-pts:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+
+.btn-pts:disabled {
+    opacity: 0.4;
+}
+
+/* Botón de -1 en rojo */
+.btn-pts[data-pts="-1"] {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.btn-pts[data-pts="-1"]:hover {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* ── Scoreboard ───────────────────────────────────────── */
+.bg-scoreboard {
+    padding: 8px 16px 100px;
+}
+
+.bg-scoreboard h3 {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.bg-scoreboard.full {
+    padding-top: 16px;
+}
+
+.score-row.big {
+    padding: 14px;
+}
+
+.score-row.big .score-name {
+    font-size: 1.05rem;
+}
+
+.score-detail {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.score-breakdown {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ── Info del juego (descripción + reglas) ────────────── */
+.game-info {
+    margin: 0 16px 8px;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-info.hidden {
+    display: none;
+}
+
+.game-info-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+#game-info-icon {
+    font-size: 2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.game-info-header h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.game-info-header p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.rules-toggle {
+    display: flex;
+}
+
+.btn-rules {
+    padding: 8px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--accent2);
+    border-radius: var(--radius-sm);
+    color: var(--accent2);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-rules:hover {
+    background: var(--accent2);
+    color: #fff;
+}
+
+.rules-list {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rules-list.hidden {
+    display: none;
+}
+
+.rules-list li {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.rules-list li::marker {
+    color: var(--accent);
+}

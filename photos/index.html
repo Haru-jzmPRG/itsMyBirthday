@@ -16,7 +16,10 @@
     <div class="photos-topbar">
         <a href="../index.html" class="btn-back">← Volver</a>
         <h2>📸 Galería</h2>
-        <span id="photo-count" class="photo-count">0 fotos</span>
+        <div class="topbar-right">
+            <span id="photo-count" class="photo-count">0 fotos</span>
+            <button id="btn-reset-gallery" class="btn-danger-small">🗑</button>
+        </div>
     </div>
 
     <!-- ── BOTONES DE ACCIÓN ──────────────────────────────── -->
@@ -68,7 +71,8 @@
     </div>
 
     <script type="module">
-        import { uploadPhoto, savePhoto, watchPhotos } from "./photos.js";
+        import { uploadPhoto, savePhoto, watchPhotos, resetPhotos } from "./photos.js";
+        import { HOST_PASSWORD } from "../config.js";
 
         const authorName = localStorage.getItem("playerName") || "Anónimo";
 
@@ -174,6 +178,20 @@
 
         document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
         document.getElementById("lightbox-backdrop").addEventListener("click", closeLightbox);
+
+        // ── Botón reset galería ────────────────────────────────
+        document.getElementById("btn-reset-gallery").addEventListener("click", async () => {
+            const pass = prompt("🔒 Ingresá la contraseña del host para borrar la galería:");
+            if (pass === null) return;
+            if (pass !== HOST_PASSWORD) {
+                alert("❌ Contraseña incorrecta.");
+                return;
+            }
+            if (confirm("¿Borrar todas las fotos de la galería? Las imágenes en Cloudinary no se eliminan.")) {
+                await resetPhotos();
+                alert("✓ Galería reiniciada.");
+            }
+        });
 
         // ── Escuchar fotos en tiempo real ──────────────────────
         watchPhotos(renderGallery);

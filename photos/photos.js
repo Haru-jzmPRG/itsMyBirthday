@@ -3,7 +3,7 @@
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from "../config.js";
 import { db, ref } from "../js/firebase.js";
 import {
-    push, onValue, query, orderByChild
+    push, onValue, query, orderByChild, set
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const PHOTOS_REF = "photos";
@@ -69,4 +69,12 @@ export function watchPhotos(callback) {
         photos.reverse();
         callback(photos);
     });
+}
+
+// ── Borrar todas las fotos de Firebase ────────────────────
+// Nota: esto solo borra las referencias en la BD.
+// Las imágenes en Cloudinary se mantienen intactas.
+
+export async function resetPhotos() {
+    await set(ref(db, PHOTOS_REF), null);
 }

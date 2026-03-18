@@ -34,36 +34,42 @@
 
             <main class="home-grid">
 
-                <!-- Juego de música -->
+                <!-- FILA 1: Música -->
                 <a href="music/player.html" class="module-card music">
                     <span class="module-icon">🎵</span>
                     <span class="module-title">Adivina la canción</span>
                     <span class="module-desc">Escuchá el preview y adiviná</span>
                 </a>
 
-                <!-- Galería de fotos -->
-                <a href="photos/index.html" class="module-card photos">
+                <a href="music/host.html" class="module-card host">
+                    <span class="module-icon">🎛️</span>
+                    <span class="module-title">Host música</span>
+                    <span class="module-desc">Solo para el cumpleañero</span>
+                </a>
+
+                <!-- FILA 2: Juegos de mesa -->
+                <!--
+                  JUEGOS DE MESA — duplicá este bloque por cada juego nuevo
+                  Cambiá: href, module-icon, module-title, module-desc
+                  Colores disponibles: boardgame-1 / boardgame-2 / boardgame-3 / boardgame-4
+                -->
+                <a href="boardgames/scores.html" class="module-card boardgame-1">
+                    <span class="module-icon">🎲</span>
+                    <span class="module-title">Ejemplo de juego</span>
+                    <span class="module-desc">Ver puntajes</span>
+                </a>
+
+                <a href="boardgames/host.html" class="module-card host">
+                    <span class="module-icon">🎯</span>
+                    <span class="module-title">Host juegos</span>
+                    <span class="module-desc">Dar puntos</span>
+                </a>
+
+                <!-- FILA 3: Fotos — centrada -->
+                <a href="photos/index.html" class="module-card photos centered">
                     <span class="module-icon">📸</span>
                     <span class="module-title">Galería</span>
                     <span class="module-desc">Sacá fotos y compartilas</span>
-                </a>
-
-                <!-- 
-          JUEGOS DE MESA — duplicá este bloque por cada juego nuevo
-          Cambiá: href, module-icon, module-title, module-desc
-          Colores disponibles: boardgame-1 / boardgame-2 / boardgame-3 / boardgame-4
-        -->
-                <a href="boardgames/ejemplo/index.html" class="module-card boardgame-1">
-                    <span class="module-icon">🎲</span>
-                    <span class="module-title">Ejemplo de juego</span>
-                    <span class="module-desc">Marcá los puntajes</span>
-                </a>
-
-                <!-- Panel del host (discreto) -->
-                <a href="music/host.html" class="module-card host">
-                    <span class="module-icon">🎛️</span>
-                    <span class="module-title">Panel del host</span>
-                    <span class="module-desc">Solo para el cumpleañero</span>
                 </a>
 
             </main>

@@ -1,0 +1,165 @@
+<!-- boardgames/scores.html -->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>🎲 Puntajes — itsMyBirthday</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/boardgames.css" />
+</head>
+
+<body>
+
+    <div class="bg-topbar">
+        <a href="../index.html" class="btn-back">← Volver</a>
+        <h2>🎲 Puntajes</h2>
+        <span></span>
+    </div>
+
+    <!-- Tabs de juegos -->
+    <div class="game-selector">
+        <p class="selector-label">Ver puntajes por juego:</p>
+        <div id="game-tabs-view" class="game-tabs">
+            <button class="game-tab active" data-id="total">🏆 Total</button>
+        </div>
+    </div>
+
+    <!-- Info del juego seleccionado (descripción + reglas) -->
+    <div id="game-info" class="game-info hidden">
+        <div class="game-info-header">
+            <span id="game-info-icon"></span>
+            <div>
+                <h3 id="game-info-name"></h3>
+                <p id="game-info-desc"></p>
+            </div>
+        </div>
+        <div id="game-rules-toggle" class="rules-toggle">
+            <button id="btn-rules" class="btn-rules">📋 Ver reglas</button>
+        </div>
+        <ol id="game-rules-list" class="rules-list hidden"></ol>
+    </div>
+
+    <!-- Scoreboard -->
+    <div class="bg-scoreboard full">
+        <div id="scoreboard-view"></div>
+    </div>
+
+    <script type="module">
+        import { watchBoardPlayers } from "./boardgames.js";
+        import { GAMES } from "./games.js";
+
+        let activeView = "total";
+        let allPlayers = [];
+
+        // ── Generar tabs ───────────────────────────────────────
+        const tabsContainer = document.getElementById("game-tabs-view");
+        GAMES.forEach(game => {
+            const btn = document.createElement("button");
+            btn.className = "game-tab";
+            btn.textContent = `${game.icon} ${game.name}`;
+            btn.dataset.id = game.id;
+            btn.addEventListener("click", () => {
+                activeView = game.id;
+                document.querySelectorAll("#game-tabs-view .game-tab")
+                    .forEach(t => t.classList.remove("active"));
+                btn.classList.add("active");
+                renderGameInfo(game);
+                renderScoreboard(allPlayers);
+            });
+            tabsContainer.appendChild(btn);
+        });
+
+        // Tab total
+        tabsContainer.querySelector("[data-id='total']").addEventListener("click", () => {
+            activeView = "total";
+            document.querySelectorAll("#game-tabs-view .game-tab")
+                .forEach(t => t.classList.remove("active"));
+            tabsContainer.querySelector("[data-id='total']").classList.add("active");
+            document.getElementById("game-info").classList.add("hidden");
+            document.getElementById("game-rules-list").classList.add("hidden");
+            document.getElementById("btn-rules").textContent = "📋 Ver reglas";
+            renderScoreboard(allPlayers);
+        });
+
+        // ── Render info del juego ──────────────────────────────
+        function renderGameInfo(game) {
+            document.getElementById("game-info-icon").textContent = game.icon;
+            document.getElementById("game-info-name").textContent = game.name;
+            document.getElementById("game-info-desc").textContent = game.description || "";
+
+            const rulesList = document.getElementById("game-rules-list");
+            if (game.rules && game.rules.length > 0) {
+                rulesList.innerHTML = game.rules.map(r => `<li>${r}</li>`).join("");
+                document.getElementById("game-rules-toggle").classList.remove("hidden");
+            } else {
+                document.getElementById("game-rules-toggle").classList.add("hidden");
+            }
+
+            rulesList.classList.add("hidden");
+            document.getElementById("btn-rules").textContent = "📋 Ver reglas";
+            document.getElementById("game-info").classList.remove("hidden");
+        }
+
+        // ── Toggle reglas ──────────────────────────────────────
+        document.getElementById("btn-rules").addEventListener("click", () => {
+            const list = document.getElementById("game-rules-list");
+            const btn = document.getElementById("btn-rules");
+            const open = !list.classList.contains("hidden");
+            list.classList.toggle("hidden", open);
+            btn.textContent = open ? "📋 Ver reglas" : "📋 Ocultar reglas";
+        });
+
+        // ── Escuchar jugadores ─────────────────────────────────
+        watchBoardPlayers((players) => {
+            allPlayers = players;
+            renderScoreboard(players);
+        });
+
+        // ── Render scoreboard ──────────────────────────────────
+        function renderScoreboard(players) {
+            const container = document.getElementById("scoreboard-view");
+
+            const sorted = [...players].sort((a, b) => {
+                if (activeView === "total") return b.totalScore - a.totalScore;
+                return (b.games?.[activeView] || 0) - (a.games?.[activeView] || 0);
+            });
+
+            if (sorted.length === 0) {
+                container.innerHTML = `<p class="empty-msg">No hay jugadores todavía.</p>`;
+                return;
+            }
+
+            container.innerHTML = sorted.map((player, index) => {
+                const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
+                const pts = activeView === "total"
+                    ? player.totalScore
+                    : (player.games?.[activeView] || 0);
+
+                const gameBreakdown = activeView === "total"
+                    ? Object.entries(player.games || {})
+                        .filter(([, p]) => p > 0)
+                        .map(([gid, p]) => {
+                            const game = GAMES.find(g => g.id === gid);
+                            return `${game ? game.icon : "🎲"} ${p}`;
+                        }).join(" · ")
+                    : "";
+
+                return `
+                    <div class="score-row big">
+                        <span class="score-rank">${medal}</span>
+                        <div class="score-detail">
+                            <span class="score-name">${player.name}</span>
+                            ${gameBreakdown ? `<span class="score-breakdown">${gameBreakdown}</span>` : ""}
+                        </div>
+                        <span class="score-points">${pts} pts</span>
+                    </div>
+                `;
+            }).join("");
+        }
+    </script>
+
+</body>
+
+</html>

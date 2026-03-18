@@ -17,6 +17,12 @@
     font-weight: 700;
 }
 
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .photo-count {
     font-size: 0.8rem;
     color: var(--text-muted);

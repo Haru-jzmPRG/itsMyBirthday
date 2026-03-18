@@ -1,0 +1,167 @@
+<!-- boardgames/host.html -->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>🎲 Host Juegos — itsMyBirthday</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/boardgames.css" />
+</head>
+
+<body>
+
+    <div class="bg-topbar">
+        <a href="../index.html" class="btn-back">← Volver</a>
+        <h2>🎲 Host Juegos</h2>
+        <button id="btn-reset-all" class="btn-danger-small">🗑 Reset</button>
+    </div>
+
+    <!-- Selector de juego activo -->
+    <div class="game-selector">
+        <p class="selector-label">Juego activo:</p>
+        <div id="game-tabs" class="game-tabs">
+            <!-- Se generan desde games.js -->
+        </div>
+    </div>
+
+    <!-- Panel de jugadores -->
+    <div class="bg-players">
+        <div id="player-list-bg">
+            <p class="empty-msg">Sincronizando jugadores...</p>
+        </div>
+    </div>
+
+    <!-- Scoreboard total -->
+    <div class="bg-scoreboard">
+        <h3>Ranking total</h3>
+        <div id="scoreboard-total"></div>
+    </div>
+
+    <script type="module">
+        import {
+            syncPlayersFromLobby,
+            addBoardPoints,
+            watchBoardPlayers,
+            resetBoardScores,
+            resetGameScore,
+        } from "./boardgames.js";
+        import { GAMES } from "./games.js";
+        import { HOST_PASSWORD } from "../config.js";
+
+        let activeGameId = GAMES[0].id;
+        let allPlayers = [];
+
+        // ── Generar tabs de juegos ─────────────────────────────
+        const tabsContainer = document.getElementById("game-tabs");
+        GAMES.forEach(game => {
+            const btn = document.createElement("button");
+            btn.className = "game-tab" + (game.id === activeGameId ? " active" : "");
+            btn.textContent = `${game.icon} ${game.name}`;
+            btn.dataset.id = game.id;
+            btn.addEventListener("click", () => {
+                activeGameId = game.id;
+                document.querySelectorAll(".game-tab").forEach(t => t.classList.remove("active"));
+                btn.classList.add("active");
+                renderPlayerList(allPlayers);
+            });
+            tabsContainer.appendChild(btn);
+        });
+
+        // ── Sincronizar jugadores del lobby ────────────────────
+        await syncPlayersFromLobby();
+
+        // ── Escuchar jugadores ─────────────────────────────────
+        watchBoardPlayers((players) => {
+            allPlayers = players;
+            renderPlayerList(players);
+            renderScoreboard(players);
+        });
+
+        // ── Render lista con botones de puntos ─────────────────
+        function renderPlayerList(players) {
+            const container = document.getElementById("player-list-bg");
+
+            if (players.length === 0) {
+                container.innerHTML = `<p class="empty-msg">No hay jugadores registrados en el lobby todavía.</p>`;
+                return;
+            }
+
+            container.innerHTML = players.map(player => {
+                const gameScore = player.games?.[activeGameId] || 0;
+                return `
+          <div class="bg-player-row">
+            <div class="bg-player-info">
+              <span class="bg-player-name">${player.name}</span>
+              <span class="bg-player-scores">
+                <span class="score-game">+${gameScore} en este juego</span>
+                <span class="score-total">${player.totalScore} total</span>
+              </span>
+            </div>
+            <div class="bg-point-buttons">
+              <button class="btn-pts" data-name="${player.name}" data-pts="-1">-1</button>
+              <button class="btn-pts" data-name="${player.name}" data-pts="1">+1</button>
+              <button class="btn-pts" data-name="${player.name}" data-pts="2">+2</button>
+              <button class="btn-pts" data-name="${player.name}" data-pts="3">+3</button>
+              <button class="btn-pts" data-name="${player.name}" data-pts="5">+5</button>
+            </div>
+          </div>
+        `;
+            }).join("");
+
+            // Eventos de puntos
+            container.querySelectorAll(".btn-pts").forEach(btn => {
+                btn.addEventListener("click", async () => {
+                    const name = btn.dataset.name;
+                    const pts = parseInt(btn.dataset.pts);
+                    btn.disabled = true;
+                    await addBoardPoints(name, activeGameId, pts);
+                    btn.disabled = false;
+                });
+            });
+        }
+
+        // ── Render scoreboard total ────────────────────────────
+        function renderScoreboard(players) {
+            const container = document.getElementById("scoreboard-total");
+            container.innerHTML = players.map((player, index) => {
+                const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`;
+                const gameBreakdown = Object.entries(player.games || {})
+                    .filter(([, pts]) => pts > 0)
+                    .map(([gid, pts]) => {
+                        const game = GAMES.find(g => g.id === gid);
+                        return `${game ? game.icon : "🎲"} ${pts}`;
+                    }).join(" · ");
+
+                return `
+          <div class="score-row">
+            <span class="score-rank">${medal}</span>
+            <div class="score-detail">
+              <span class="score-name">${player.name}</span>
+              ${gameBreakdown ? `<span class="score-breakdown">${gameBreakdown}</span>` : ""}
+            </div>
+            <span class="score-points">${player.totalScore} pts</span>
+          </div>
+        `;
+            }).join("");
+        }
+
+        // ── Reset total ────────────────────────────────────────
+        document.getElementById("btn-reset-all").addEventListener("click", async () => {
+            const pass = prompt("🔒 Ingresá la contraseña del host para resetear:");
+            if (pass === null) return;
+            if (pass !== HOST_PASSWORD) {
+                alert("❌ Contraseña incorrecta.");
+                return;
+            }
+            if (confirm("¿Resetear TODOS los puntos de juegos de mesa?")) {
+                await resetBoardScores();
+                alert("✓ Puntos reseteados.");
+            }
+        });
+    </script>
+
+</body>
+
+</html>
