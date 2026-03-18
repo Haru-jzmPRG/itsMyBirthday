@@ -4,40 +4,38 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎵 Host — itsMyBirthday</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>🎛️ Host — itsMyBirthday</title>
     <link rel="stylesheet" href="../css/main.css" />
     <link rel="stylesheet" href="../css/music.css" />
 </head>
 
 <body>
 
-    <!-- ── LOGIN ─────────────────────────────────────────── -->
-    <div id="screen-login" class="screen active">
-        <div class="center-card">
-            <h1>🎂 itsMyBirthday</h1>
-            <h2>Panel del Host</h2>
-            <p>Iniciá sesión con Spotify para cargar la playlist</p>
-            <button id="btn-login" class="btn-primary">Conectar con Spotify</button>
-        </div>
-    </div>
+    <!-- Contenedor invisible del player de YouTube -->
+    <div id="yt-player" style="position:absolute;pointer-events:none;opacity:0;"></div>
 
     <!-- ── CARGANDO ───────────────────────────────────────── -->
-    <div id="screen-loading" class="screen">
+    <div id="screen-loading" class="screen active">
         <div class="center-card">
             <div class="spinner"></div>
-            <p>Cargando playlist...</p>
+            <p>Iniciando reproductor...</p>
         </div>
     </div>
 
     <!-- ── JUEGO ──────────────────────────────────────────── -->
     <div id="screen-game" class="screen">
 
-        <!-- Canción actual -->
+        <div class="host-topbar">
+            <a href="../index.html" class="btn-back">← Volver</a>
+            <button id="btn-reset-all" class="btn-danger-small">🗑 Reiniciar app</button>
+        </div>
+
+        <!-- Canción actual (se revela al tocar el botón) -->
         <div id="track-card" class="track-card hidden">
-            <img id="track-cover" src="" alt="portada" />
+            <div class="track-thumb">🎵</div>
             <div class="track-info">
-                <span id="track-name">—</span>
+                <span id="track-title">—</span>
                 <span id="track-artist">—</span>
             </div>
         </div>
@@ -45,10 +43,12 @@
         <!-- Controles principales -->
         <div class="host-controls">
 
+            <!-- Botón play / pausar -->
             <button id="btn-play" class="btn-primary btn-big">
                 ▶ Sonar 1 segundo
             </button>
 
+            <!-- Panel de extensión (aparece tras el primer play) -->
             <div id="extend-panel" class="extend-panel hidden">
                 <p>¿Cuánto más la dejás sonar?</p>
                 <div class="extend-buttons">
@@ -57,6 +57,10 @@
                     <button class="btn-extend" data-seconds="10">+10s</button>
                     <button class="btn-extend" data-seconds="30">+30s</button>
                 </div>
+                <!-- Botón pausa/reanudar -->
+                <button id="btn-pause" class="btn-secondary" style="margin-top:8px;">
+                    ⏸ Pausar
+                </button>
             </div>
 
             <button id="btn-reveal" class="btn-secondary hidden">
@@ -84,14 +88,14 @@
 
     <script type="module">
         import {
-            loginWithSpotify,
-            handleCallback,
-            getToken,
-            loadPlaylist,
             getRandomTrack,
-            playPreview,
+            initYouTubePlayer,
+            playTrack,
             extendPlayback,
-            stopPreview,
+            pauseTrack,
+            resumeTrack,
+            stopTrack,
+            isPlaying,
             broadcastTrack,
             revealTrack,
             setWaiting,
@@ -99,13 +103,13 @@
             resetRound,
         } from "./music.js";
 
-        // ── Estado local ───────────────────────────────────────
-        let tracks = [];
-        let playedIds = [];
+        // ── Estado ─────────────────────────────────────────────
         let currentTrack = null;
+        let playedIds = [];
         let hasPlayed = false;
+        let paused = false;
 
-        // ── Helpers de pantalla ────────────────────────────────
+        // ── Helpers ────────────────────────────────────────────
         function showScreen(id) {
             document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
             document.getElementById(id).classList.add("active");
@@ -114,58 +118,27 @@
         function show(id) { document.getElementById(id).classList.remove("hidden"); }
         function hide(id) { document.getElementById(id).classList.add("hidden"); }
 
-        // ── Init ───────────────────────────────────────────────
-        async function init() {
-            // Si volvió del callback de Spotify
-            if (window.location.search.includes("code=")) {
-                showScreen("screen-loading");
-                const token = await handleCallback();
-                if (token) await startGame(token);
-                else showScreen("screen-login");
-                return;
-            }
-
-            const token = getToken();
-            if (token) {
-                showScreen("screen-loading");
-                await startGame(token);
-            } else {
-                showScreen("screen-login");
-            }
-        }
-
-        async function startGame(token) {
-            tracks = await loadPlaylist(token);
-
-            if (tracks.length === 0) {
-                alert("No se encontraron canciones con preview en la playlist. Probá con otra playlist.");
-                showScreen("screen-login");
-                return;
-            }
-
+        // ── Init YouTube ───────────────────────────────────────
+        initYouTubePlayer("yt-player", async () => {
             initHostPanel("player-list");
             await setWaiting();
             loadNextTrack();
             showScreen("screen-game");
-        }
+        });
 
         // ── Cargar siguiente canción ───────────────────────────
         function loadNextTrack() {
-            currentTrack = getRandomTrack(tracks, playedIds);
+            currentTrack = getRandomTrack(playedIds);
 
             if (!currentTrack) {
                 alert("¡Se acabaron las canciones! Reseteando...");
                 playedIds = [];
-                currentTrack = getRandomTrack(tracks, []);
+                currentTrack = getRandomTrack([]);
             }
 
             playedIds.push(currentTrack.id);
             hasPlayed = false;
-
-            // Actualizar card (oculta hasta revelar)
-            document.getElementById("track-cover").src = currentTrack.cover || "";
-            document.getElementById("track-name").textContent = currentTrack.name;
-            document.getElementById("track-artist").textContent = currentTrack.artist;
+            paused = false;
 
             // Resetear UI
             hide("track-card");
@@ -174,8 +147,11 @@
             hide("btn-next");
             show("btn-play");
 
+            document.getElementById("track-title").textContent = currentTrack.title;
+            document.getElementById("track-artist").textContent = currentTrack.artist;
             document.getElementById("btn-play").textContent = "▶ Sonar 1 segundo";
             document.getElementById("btn-play").disabled = false;
+            document.getElementById("btn-pause").textContent = "⏸ Pausar";
         }
 
         // ── Botón: sonar 1 segundo ─────────────────────────────
@@ -184,33 +160,56 @@
 
             await broadcastTrack(currentTrack);
 
-            playPreview(currentTrack.preview, 1, () => {
-                // Cuando termina el 1 segundo
-                show("extend-panel");
-                show("btn-reveal");
+            playTrack(currentTrack.id, 1, () => {
+                paused = false;
+                document.getElementById("btn-pause").textContent = "⏸ Pausar";
             });
 
             document.getElementById("btn-play").textContent = "🎵 Sonando...";
             document.getElementById("btn-play").disabled = true;
             hasPlayed = true;
+
+            show("extend-panel");
+            show("btn-reveal");
         });
 
         // ── Botones: extender tiempo ───────────────────────────
         document.querySelectorAll(".btn-extend").forEach(btn => {
             btn.addEventListener("click", () => {
                 const seconds = parseInt(btn.dataset.seconds);
+                paused = false;
+                document.getElementById("btn-pause").textContent = "⏸ Pausar";
+
                 extendPlayback(seconds, () => {
-                    // No hace nada al terminar, el host decide cuándo revelar
+                    paused = false;
+                    document.getElementById("btn-pause").textContent = "⏸ Pausar";
                 });
-                // Feedback visual
+
                 btn.textContent = `✓ +${seconds}s`;
                 setTimeout(() => { btn.textContent = `+${seconds}s`; }, 1500);
             });
         });
 
+        // ── Botón: pausar / reanudar ───────────────────────────
+        document.getElementById("btn-pause").addEventListener("click", () => {
+            if (!hasPlayed) return;
+
+            if (isPlaying()) {
+                pauseTrack();
+                paused = true;
+                document.getElementById("btn-pause").textContent = "▶ Reanudar";
+            } else {
+                paused = false;
+                document.getElementById("btn-pause").textContent = "⏸ Pausar";
+                resumeTrack(30, () => {
+                    document.getElementById("btn-pause").textContent = "⏸ Pausar";
+                });
+            }
+        });
+
         // ── Botón: revelar canción ─────────────────────────────
         document.getElementById("btn-reveal").addEventListener("click", async () => {
-            stopPreview();
+            stopTrack();
             await revealTrack(currentTrack);
             show("track-card");
             show("btn-next");
@@ -232,11 +231,17 @@
             }
         });
 
-        // ── Login ──────────────────────────────────────────────
-        document.getElementById("btn-login").addEventListener("click", loginWithSpotify);
-
-        // ── Arrancar ───────────────────────────────────────────
-        init();
+        // ── Botón: reiniciar app completa ──────────────────────
+        document.getElementById("btn-reset-all").addEventListener("click", async () => {
+            if (confirm("¿Reiniciar toda la app? Esto borra todos los jugadores y puntajes.")) {
+                const { db, ref } = await import("../js/firebase.js");
+                const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+                await set(ref(db, "games"), null);
+                await setWaiting();
+                loadNextTrack();
+                alert("App reiniciada ✓");
+            }
+        });
     </script>
 
 </body>
