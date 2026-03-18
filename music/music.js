@@ -18,9 +18,9 @@ export function getRandomTrack(exclude = []) {
 let player = null;
 let playerReady = false;
 let stopTimer = null;
+let pendingPlay = null; // guarda lo que hay que hacer tras el anuncio
 
 export function initYouTubePlayer(containerId, onReady) {
-    // Cargar el script de YouTube si no está
     if (!window.YT) {
         const tag = document.createElement("script");
         tag.src = "https://www.youtube.com/iframe_api";
@@ -44,14 +44,72 @@ export function initYouTubePlayer(containerId, onReady) {
                     playerReady = true;
                     if (onReady) onReady();
                 },
+                onStateChange: (event) => {
+                    handleStateChange(event.data);
+                },
             },
         });
     };
 
-    // Si YT ya estaba cargado, inicializar directamente
     if (window.YT && window.YT.Player) {
         window.onYouTubeIframeAPIReady();
     }
+}
+
+function handleStateChange(state) {
+    // -1 = sin iniciar, 0 = terminado, 1 = reproduciendo, 2 = pausado
+    // 3 = buffering, 5 = video en cola
+    // El anuncio NO tiene un estado propio en la API pública,
+    // pero sí podemos detectarlo porque el player reporta
+    // "reproduciendo" pero getCurrentTime() devuelve 0 o negativo
+
+    if (state === YT.PlayerState.PLAYING) {
+        const time = player.getCurrentTime();
+
+        if (time < 0 || (pendingPlay && time < 0.5)) {
+            // Tiempo negativo = anuncio reproduciéndose
+            // Esperamos y volvemos a chequear
+            setTimeout(() => {
+                const newTime = player.getCurrentTime();
+                if (newTime < 0.5 && pendingPlay) {
+                    // Sigue en anuncio, seguir esperando
+                    waitForAdToEnd();
+                } else if (pendingPlay) {
+                    // Terminó el anuncio, arrancar timer
+                    startStopTimer(pendingPlay.seconds, pendingPlay.onEnd);
+                    pendingPlay = null;
+                }
+            }, 500);
+        }
+    }
+}
+
+function waitForAdToEnd() {
+    // Polling cada 500ms hasta que getCurrentTime() > 0
+    const check = setInterval(() => {
+        if (!player || !pendingPlay) {
+            clearInterval(check);
+            return;
+        }
+
+        const time = player.getCurrentTime();
+        const state = player.getPlayerState();
+
+        if (state === YT.PlayerState.PLAYING && time >= 0.5) {
+            // El anuncio terminó, la canción está sonando
+            clearInterval(check);
+            startStopTimer(pendingPlay.seconds, pendingPlay.onEnd);
+            pendingPlay = null;
+        }
+    }, 500);
+}
+
+function startStopTimer(seconds, onEnd) {
+    clearStopTimer();
+    stopTimer = setTimeout(() => {
+        pauseTrack();
+        if (onEnd) onEnd();
+    }, seconds * 1000);
 }
 
 // ── Reproducción ───────────────────────────────────────────
@@ -60,13 +118,27 @@ export function playTrack(videoId, seconds, onEnd) {
     if (!playerReady || !player) return;
     clearStopTimer();
 
+    // Guardar qué hacer tras el anuncio
+    pendingPlay = { seconds, onEnd };
+
     player.loadVideoById({ videoId, startSeconds: 0 });
     player.playVideo();
 
-    stopTimer = setTimeout(() => {
-        pauseTrack();
-        if (onEnd) onEnd();
-    }, seconds * 1000);
+    // Chequeo inicial — si no hay anuncio arranca el timer directo
+    setTimeout(() => {
+        if (!pendingPlay) return; // ya se resolvió
+        const time = player.getCurrentTime();
+        const state = player.getPlayerState();
+
+        if (state === YT.PlayerState.PLAYING && time >= 0.5) {
+            // No hubo anuncio
+            startStopTimer(seconds, onEnd);
+            pendingPlay = null;
+        } else {
+            // Hay anuncio, esperar
+            waitForAdToEnd();
+        }
+    }, 1000);
 }
 
 export function extendPlayback(extraSeconds, onEnd) {
