@@ -1,0 +1,229 @@
+/* css/photos.css */
+
+/* ── Topbar ───────────────────────────────────────────── */
+.photos-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.photos-topbar h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.photo-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ── Botones de acción ────────────────────────────────── */
+.photos-actions {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+}
+
+.btn-action {
+    flex: 1;
+    padding: 16px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-action:active {
+    transform: scale(0.97);
+}
+
+.btn-action.camera {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+}
+
+.btn-action.upload {
+    background: var(--surface2);
+    color: var(--text);
+    border: 2px solid var(--surface2);
+}
+
+/* ── Barra de progreso ────────────────────────────────── */
+.upload-bar {
+    margin: 0 16px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.upload-bar-inner {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.upload-progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.2s;
+    width: 0%;
+}
+
+#upload-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* ── Galería grid ─────────────────────────────────────── */
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 0 3px 100px;
+}
+
+.gallery-item {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--surface2);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s;
+}
+
+.gallery-item:active img {
+    transform: scale(0.97);
+}
+
+.gallery-author {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 4px 6px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+    font-size: 0.7rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Galería vacía ────────────────────────────────────── */
+.gallery-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gallery-empty p:first-child {
+    font-size: 3rem;
+}
+
+/* ── Lightbox ─────────────────────────────────────────── */
+.lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.hidden {
+    display: none;
+}
+
+.lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.lightbox-content {
+    position: relative;
+    z-index: 1;
+    width: 92vw;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.lightbox-close {
+    align-self: flex-end;
+    background: var(--surface2);
+    border: none;
+    color: var(--text);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.lightbox-content img {
+    width: 100%;
+    border-radius: var(--radius);
+    object-fit: contain;
+    max-height: 70vh;
+}
+
+.lightbox-info {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+}
+
+#lightbox-author {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.btn-download {
+    padding: 8px 16px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (min-width: 480px) {
+    .gallery {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    .gallery {
+        grid-template-columns: repeat(5, 1fr);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+}

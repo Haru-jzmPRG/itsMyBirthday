@@ -1,0 +1,184 @@
+<!-- photos/index.html -->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>📸 Galería — itsMyBirthday</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/photos.css" />
+</head>
+
+<body>
+
+    <!-- ── TOPBAR ─────────────────────────────────────────── -->
+    <div class="photos-topbar">
+        <a href="../index.html" class="btn-back">← Volver</a>
+        <h2>📸 Galería</h2>
+        <span id="photo-count" class="photo-count">0 fotos</span>
+    </div>
+
+    <!-- ── BOTONES DE ACCIÓN ──────────────────────────────── -->
+    <div class="photos-actions">
+        <button id="btn-camera" class="btn-action camera">
+            📷 Cámara
+        </button>
+        <button id="btn-upload" class="btn-action upload">
+            🖼 Galería
+        </button>
+    </div>
+
+    <!-- Input oculto para cámara -->
+    <input id="input-camera" type="file" accept="image/*" capture="environment" style="display:none" />
+
+    <!-- Input oculto para galería -->
+    <input id="input-gallery" type="file" accept="image/*" multiple style="display:none" />
+
+    <!-- ── BARRA DE PROGRESO ──────────────────────────────── -->
+    <div id="upload-bar" class="upload-bar hidden">
+        <div class="upload-bar-inner">
+            <div id="upload-progress" class="upload-progress"></div>
+        </div>
+        <span id="upload-label">Subiendo...</span>
+    </div>
+
+    <!-- ── GALERÍA ────────────────────────────────────────── -->
+    <div id="gallery" class="gallery">
+        <div class="gallery-empty">
+            <p>📷</p>
+            <p>Todavía no hay fotos</p>
+            <p>¡Sé el primero en sacar una!</p>
+        </div>
+    </div>
+
+    <!-- ── LIGHTBOX ───────────────────────────────────────── -->
+    <div id="lightbox" class="lightbox hidden">
+        <div class="lightbox-backdrop" id="lightbox-backdrop"></div>
+        <div class="lightbox-content">
+            <button id="lightbox-close" class="lightbox-close">✕</button>
+            <img id="lightbox-img" src="" alt="" />
+            <div class="lightbox-info">
+                <span id="lightbox-author"></span>
+                <a id="lightbox-download" class="btn-download" download>
+                    ⬇ Descargar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { uploadPhoto, savePhoto, watchPhotos } from "./photos.js";
+
+        const authorName = localStorage.getItem("playerName") || "Anónimo";
+
+        // ── Helpers ────────────────────────────────────────────
+        function show(id) { document.getElementById(id).classList.remove("hidden"); }
+        function hide(id) { document.getElementById(id).classList.add("hidden"); }
+
+        // ── Subir archivo ──────────────────────────────────────
+        async function handleFile(file) {
+            if (!file || !file.type.startsWith("image/")) return;
+
+            // Mostrar barra de progreso
+            show("upload-bar");
+            document.getElementById("upload-label").textContent = "Subiendo...";
+            document.getElementById("upload-progress").style.width = "0%";
+
+            try {
+                const url = await uploadPhoto(file, (pct) => {
+                    document.getElementById("upload-progress").style.width = `${pct}%`;
+                    document.getElementById("upload-label").textContent = `Subiendo... ${pct}%`;
+                });
+
+                await savePhoto(url, authorName);
+                document.getElementById("upload-label").textContent = "✓ Foto guardada";
+                setTimeout(() => hide("upload-bar"), 1500);
+
+            } catch (err) {
+                document.getElementById("upload-label").textContent = "Error al subir, intentá de nuevo";
+                setTimeout(() => hide("upload-bar"), 2500);
+            }
+        }
+
+        // ── Subir múltiples archivos ───────────────────────────
+        async function handleFiles(files) {
+            for (const file of files) {
+                await handleFile(file);
+            }
+        }
+
+        // ── Botón cámara ───────────────────────────────────────
+        document.getElementById("btn-camera").addEventListener("click", () => {
+            document.getElementById("input-camera").click();
+        });
+
+        document.getElementById("input-camera").addEventListener("change", (e) => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+            e.target.value = "";
+        });
+
+        // ── Botón galería ──────────────────────────────────────
+        document.getElementById("btn-upload").addEventListener("click", () => {
+            document.getElementById("input-gallery").click();
+        });
+
+        document.getElementById("input-gallery").addEventListener("change", (e) => {
+            if (e.target.files.length) handleFiles(Array.from(e.target.files));
+            e.target.value = "";
+        });
+
+        // ── Render galería ─────────────────────────────────────
+        function renderGallery(photos) {
+            const gallery = document.getElementById("gallery");
+            document.getElementById("photo-count").textContent =
+                `${photos.length} foto${photos.length !== 1 ? "s" : ""}`;
+
+            if (photos.length === 0) {
+                gallery.innerHTML = `
+          <div class="gallery-empty">
+            <p>📷</p>
+            <p>Todavía no hay fotos</p>
+            <p>¡Sé el primero en sacar una!</p>
+          </div>`;
+                return;
+            }
+
+            gallery.innerHTML = photos.map(photo => `
+        <div class="gallery-item" data-url="${photo.url}" data-author="${photo.author}">
+          <img src="${photo.url}" alt="foto de ${photo.author}" loading="lazy" />
+          <span class="gallery-author">${photo.author}</span>
+        </div>
+      `).join("");
+
+            // Eventos lightbox
+            gallery.querySelectorAll(".gallery-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    openLightbox(item.dataset.url, item.dataset.author);
+                });
+            });
+        }
+
+        // ── Lightbox ───────────────────────────────────────────
+        function openLightbox(url, author) {
+            document.getElementById("lightbox-img").src = url;
+            document.getElementById("lightbox-author").textContent = `📸 ${author}`;
+            document.getElementById("lightbox-download").href = url;
+            show("lightbox");
+        }
+
+        function closeLightbox() {
+            hide("lightbox");
+            document.getElementById("lightbox-img").src = "";
+        }
+
+        document.getElementById("lightbox-close").addEventListener("click", closeLightbox);
+        document.getElementById("lightbox-backdrop").addEventListener("click", closeLightbox);
+
+        // ── Escuchar fotos en tiempo real ──────────────────────
+        watchPhotos(renderGallery);
+    </script>
+
+</body>
+
+</html>
