@@ -28,7 +28,6 @@
 
         <div class="host-topbar">
             <a href="../index.html" class="btn-back">← Volver</a>
-            <button id="btn-reset-all" class="btn-danger-small">🗑 Reiniciar app</button>
         </div>
 
         <!-- Canción actual (se revela al tocar el botón) -->
@@ -102,7 +101,6 @@
             initHostPanel,
             resetRound,
         } from "./music.js";
-        import { HOST_PASSWORD } from "../config.js";
 
         // ── Estado ─────────────────────────────────────────────
         let currentTrack = null;
@@ -229,24 +227,6 @@
         document.getElementById("btn-reset").addEventListener("click", async () => {
             if (confirm("¿Resetear todos los puntos a 0?")) {
                 await resetRound();
-            }
-        });
-
-        // ── Botón: reiniciar app completa ──────────────────────
-        document.getElementById("btn-reset-all").addEventListener("click", async () => {
-            const pass = prompt("🔒 Ingresá la contraseña del host para reiniciar:");
-            if (pass === null) return; // canceló
-            if (pass !== HOST_PASSWORD) {
-                alert("❌ Contraseña incorrecta.");
-                return;
-            }
-            if (confirm("¿Reiniciar toda la app? Esto borra todos los jugadores y puntajes.")) {
-                const { db, ref } = await import("../js/firebase.js");
-                const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
-                await set(ref(db, "games"), null);
-                await setWaiting();
-                loadNextTrack();
-                alert("✓ App reiniciada.");
             }
         });
     </script>

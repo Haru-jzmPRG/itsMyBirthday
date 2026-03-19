@@ -557,10 +557,37 @@ input[type="text"] {
         justify-content: center;
     }
 }
-
 /* ── Tarjeta centrada (fila sola) ─────────────────────── */
 .module-card.centered {
-    grid-column: 1 / -1;
-    max-width: calc(50% - 8px);
-    margin: 0 auto;
+  grid-column: 1 / -1;
+  max-width: calc(50% - 8px);
+  margin: 0 auto;
+}
+
+/* ── Reiniciar app (menú principal) ───────────────────── */
+.reset-app-wrapper {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+  padding-bottom: 40px;
+}
+
+.btn-reset-app {
+  padding: 8px 18px;
+  background: transparent;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: 0.8rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.btn-reset-app:hover {
+  opacity: 1;
+  background: var(--danger);
+  color: #fff;
 }

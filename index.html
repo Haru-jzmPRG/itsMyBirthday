@@ -73,11 +73,18 @@
                 </a>
 
             </main>
+
+            <!-- Botón reinicio global — discreto al fondo -->
+            <div class="reset-app-wrapper">
+                <button id="btn-reset-app" class="btn-reset-app">🗑 Reiniciar app completa</button>
+            </div>
+
         </div>
     </div>
 
     <script type="module">
-        import { joinGame } from "./js/scores.js";
+        import { joinGame, playerExists } from "./js/scores.js";
+        import { HOST_PASSWORD } from "./config.js";
 
         const GAME_ID = "lobby";
 
@@ -90,11 +97,17 @@
         function show(id) { document.getElementById(id).classList.remove("hidden"); }
         function hide(id) { document.getElementById(id).classList.add("hidden"); }
 
-        // ── Si ya se registró antes, saltar directo al menú ────
+        // ── Si ya se registró antes, verificar que sigue en Firebase ──
         const savedName = localStorage.getItem("playerName");
         if (savedName) {
-            document.getElementById("welcome-msg").textContent = `¡Hola, ${savedName}! 👋`;
-            showScreen("screen-menu");
+            const exists = await playerExists(GAME_ID, savedName);
+            if (exists) {
+                document.getElementById("welcome-msg").textContent = `¡Hola, ${savedName}! 👋`;
+                showScreen("screen-menu");
+            } else {
+                localStorage.removeItem("playerName");
+                showScreen("screen-register");
+            }
         }
 
         // ── Registro ───────────────────────────────────────────
@@ -120,9 +133,26 @@
             showScreen("screen-menu");
         });
 
-        // Enter en el input
         document.getElementById("input-name").addEventListener("keydown", (e) => {
             if (e.key === "Enter") document.getElementById("btn-join").click();
+        });
+
+        // ── Reiniciar app completa ─────────────────────────────
+        document.getElementById("btn-reset-app").addEventListener("click", async () => {
+            const pass = prompt("🔒 Contraseña del host:");
+            if (pass === null) return;
+            if (pass !== HOST_PASSWORD) { alert("❌ Contraseña incorrecta."); return; }
+            if (!confirm("¿Reiniciar TODO? Se borran jugadores, puntajes y fotos.")) return;
+
+            const { db, ref } = await import("./js/firebase.js");
+            const { set } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+
+            // Borrar jugadores, puntajes, estado del juego, juegos de mesa y fotos
+            await set(ref(db, "games"),      null);
+            await set(ref(db, "boardgames"), null);
+            await set(ref(db, "photos"),     null);
+
+            alert("✓ App reiniciada. Todos deberán volver a registrarse.");
         });
     </script>
 

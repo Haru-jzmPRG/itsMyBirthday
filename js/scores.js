@@ -19,7 +19,12 @@ export async function joinGame(gameId, playerName) {
   return true;
 }
 
-// ── Dar puntos (lo usa el host) ────────────────────────────
+// ── Verificar si un jugador existe en Firebase ─────────────
+
+export async function playerExists(gameId, playerName) {
+  const players = await getPlayers(gameId);
+  return !!players[playerName];
+}
 
 export async function givePoints(gameId, playerName, points) {
   if (points <= 0) return;
