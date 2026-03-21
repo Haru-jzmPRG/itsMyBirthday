@@ -591,3 +591,14 @@ input[type="text"] {
   background: var(--danger);
   color: #fff;
 }
+
+/* ── Botón restar puntos (música host) ────────────────── */
+.point-buttons .btn-minus {
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+.point-buttons .btn-minus:hover {
+  background: var(--danger) !important;
+  color: #fff !important;
+}

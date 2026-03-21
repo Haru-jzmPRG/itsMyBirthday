@@ -87,6 +87,7 @@
 
     <script type="module">
         import {
+            loadPlaylist,
             getRandomTrack,
             initYouTubePlayer,
             playTrack,
@@ -103,10 +104,11 @@
         } from "./music.js";
 
         // ── Estado ─────────────────────────────────────────────
+        let tracks       = [];
         let currentTrack = null;
-        let playedIds = [];
-        let hasPlayed = false;
-        let paused = false;
+        let playedIds    = [];
+        let hasPlayed    = false;
+        let paused       = false;
 
         // ── Helpers ────────────────────────────────────────────
         function showScreen(id) {
@@ -117,8 +119,13 @@
         function show(id) { document.getElementById(id).classList.remove("hidden"); }
         function hide(id) { document.getElementById(id).classList.add("hidden"); }
 
-        // ── Init YouTube ───────────────────────────────────────
+        // ── Init YouTube + cargar playlist ─────────────────────
         initYouTubePlayer("yt-player", async () => {
+            tracks = await loadPlaylist();
+            if (tracks.length === 0) {
+                alert("No se pudieron cargar canciones de la playlist. Revisá la API Key o el ID de playlist.");
+                return;
+            }
             initHostPanel("player-list");
             await setWaiting();
             loadNextTrack();
@@ -127,12 +134,12 @@
 
         // ── Cargar siguiente canción ───────────────────────────
         function loadNextTrack() {
-            currentTrack = getRandomTrack(playedIds);
+            currentTrack = getRandomTrack(tracks, playedIds);
 
             if (!currentTrack) {
                 alert("¡Se acabaron las canciones! Reseteando...");
-                playedIds = [];
-                currentTrack = getRandomTrack([]);
+                playedIds    = [];
+                currentTrack = getRandomTrack(tracks, []);
             }
 
             playedIds.push(currentTrack.id);

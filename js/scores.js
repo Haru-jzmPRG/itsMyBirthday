@@ -27,7 +27,7 @@ export async function playerExists(gameId, playerName) {
 }
 
 export async function givePoints(gameId, playerName, points) {
-  if (points <= 0) return;
+  if (points === 0) return;
   await addPoints(gameId, playerName, points);
 }
 
@@ -78,6 +78,7 @@ export function renderPlayerList(players, containerId, onGivePoints) {
       <span class="player-name">${player.name}</span>
       <span class="player-score">${player.score} pts</span>
       <div class="point-buttons">
+        <button class="btn-minus" onclick="onGivePoints('${player.name}', -1)">-1</button>
         <button onclick="onGivePoints('${player.name}', 1)">+1</button>
         <button onclick="onGivePoints('${player.name}', 2)">+2</button>
         <button onclick="onGivePoints('${player.name}', 3)">+3</button>

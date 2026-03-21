@@ -1,14 +1,55 @@
 // music/music.js
-import { PLAYLIST } from "./playlist.js";
+import { YOUTUBE_API_KEY, YOUTUBE_PLAYLIST_ID } from "../config.js";
 import { setGameState, onGameStateChange } from "../js/firebase.js";
 import { watchPlayerList, givePoints, resetGame } from "../js/scores.js";
 
 const GAME_ID = "music";
 
-// ── Playlist ───────────────────────────────────────────────
+// ── Cargar playlist de YouTube ─────────────────────────────
 
-export function getRandomTrack(exclude = []) {
-    const available = PLAYLIST.filter(t => !exclude.includes(t.id));
+export async function loadPlaylist() {
+    let tracks    = [];
+    let pageToken = "";
+
+    do {
+        const url = new URL("https://www.googleapis.com/youtube/v3/playlistItems");
+        url.searchParams.set("part",       "snippet");
+        url.searchParams.set("playlistId", YOUTUBE_PLAYLIST_ID);
+        url.searchParams.set("maxResults", "50");
+        url.searchParams.set("key",        YOUTUBE_API_KEY);
+        if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+        const res  = await fetch(url);
+        const data = await res.json();
+
+        if (data.error) {
+            console.error("Error cargando playlist:", data.error.message);
+            break;
+        }
+
+        const valid = data.items
+            .filter(item =>
+                item.snippet.resourceId.kind === "youtube#video" &&
+                item.snippet.title !== "Private video" &&
+                item.snippet.title !== "Deleted video"
+            )
+            .map(item => ({
+                id:     item.snippet.resourceId.videoId,
+                title:  item.snippet.title,
+                artist: item.snippet.videoOwnerChannelTitle || "",
+                cover:  item.snippet.thumbnails?.medium?.url || "",
+            }));
+
+        tracks    = [...tracks, ...valid];
+        pageToken = data.nextPageToken || "";
+
+    } while (pageToken);
+
+    return tracks;
+}
+
+export function getRandomTrack(tracks, exclude = []) {
+    const available = tracks.filter(t => !exclude.includes(t.id));
     if (available.length === 0) return null;
     return available[Math.floor(Math.random() * available.length)];
 }
