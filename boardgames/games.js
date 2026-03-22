@@ -23,17 +23,21 @@ export const GAMES = [
             "Tendrás dos tipos de cartas, las de LETRAS que se irán descartando a medida que vayan gritando palabras, y las de CATEGORÍA que dictará el tema de cada ronda. OJO! Con las letras en  DORADO, cuando grites una palabra con esa letra CAMBIAS LA CATEGORÍA DE LA RONDA.",
 
             "OBJETIVO: Cada carta vale 1 PUNTO, consigue la mayor cantidad de cartas en un minuto!",
-        ],
+        ]
+    },
+    {
         id: "2",
         name: "MENTE VACUNA ",
         icon: "🐮",
         url: "scores.html",
-        desciption: "¡Sigue al Rebaño! En este juego, pensar diferente es un error. No busques la respuesta correcta, busca la respuesta que daría todo el mundo. Si todos dicen 'Pizza' y tú dices 'Sushi', ¡te quedas fuera!",
+        description: "¡Sigue al Rebaño! En este juego, pensar diferente es un error. No busques la respuesta correcta, busca la respuesta que daría todo el mundo. Si todos dicen 'Pizza' y tú dices 'Sushi', ¡te quedas fuera!",
         rules: [
             "Puntos (Vacas): Si tu respuesta es la que más gente ha escrito, ¡ganas una ficha de vaca! 🐄",
             "El Castigo (La Vaca Rosa): Si tu respuesta es la única diferente a todas las demás, te llevas la Vaca Rosa de plástico. Mientras la tengas, no puedes ganar, ¡aunque tengas mil puntos! Te la quitas de encima solo cuando otra persona sea la \"rara\" en otra ronda.",
             "El Ganador: El primero en reunir 8 fichas de vaca (y que no tenga la vaca rosa a su lado) se corona como el Rey o Reina del Rebaño."
-        ],
+        ]
+    },
+    {
         id: "3",
         name: "¿POR QUÉ ERES ASÍ?",
         icon: "🤔",
